@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Research Copilot</h1>
+<p class="sub">Enter a theorem, conjecture, equation, or research area. MDN will find related concepts, research gaps, and predict importance.</p>
+
+<div class="card">
+  <form method="get" action="{{ url_for('copilot') }}">
+    <label>Your Research Query</label>
+    <textarea name="q" rows="3" placeholder="e.g. 'elliptic curves and modular forms', 'topological invariants of 3-manifolds', 'prime distribution and zeta functions'">{{ query }}</textarea>
+    <button type="submit">Ask the Copilot →</button>
+  </form>
+</div>
+
+{% if query and not result %}
+<div class="alert alert-warn">No results found for your query.</div>
+{% endif %}
+
+{% if result %}
+<div class="card alert-ok" style="border:1px solid var(--ok)">
+  <h2>Copilot Response</h2>
+  <p style="font-size:13px;color:var(--muted)">{{ result.explanation }}</p>
+</div>
+
+{% if result.related_concepts %}
+<div class="card">
+  <h2>Related Mathematical Concepts</h2>
+  <table>
+    <thead><tr><th>Name</th><th>Domain</th><th>Type</th><th>Year</th><th>Status</th><th>Importance</th></tr></thead>
+    <tbody>
+    {% for c in result.related_concepts %}
+    <tr>
+      <td><strong>{{ c.name }}</strong></td>
+      <td><span class="chip">{{ c.domain }}</span></td>
+      <td>{{ c.concept_type }}</td>
+      <td>{{ c.year_introduced }}</td>
+      <td>{% if c.proven %}<span class="badge b-ok">Proved</span>{% else %}<span class="badge b-warn">Open</span>{% endif %}</td>
+      <td>
+        <div class="score-bar"><div class="score-fill" style="width:{{ (c.importance_score*100)|int }}%"></div></div>
+        {{ "%.2f"|format(c.importance_score) }}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if result.research_gaps %}
+<div class="card">
+  <h2>Research Gaps Identified</h2>
+  {% for gap in result.research_gaps %}
+  <div class="alert alert-warn">
+    <strong>Gap:</strong> {{ gap }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if result.predictions %}
+<div class="card">
+  <h2>Fruitfulness Predictions</h2>
+  <table>
+    <thead><tr><th>Concept</th><th>Fruitfulness</th><th>New Subfield %</th><th>Proof Difficulty</th><th>Confidence</th></tr></thead>
+    <tbody>
+    {% for p in result.predictions %}
+    <tr>
+      <td><strong>{{ p.concept_id }}</strong></td>
+      <td>
+        <div class="score-bar"><div class="score-fill" style="width:{{ (p.overall_fruitfulness*100)|int }}%"></div></div>
+        {{ "%.1f"|format(p.overall_fruitfulness * 100) }}%
+      </td>
+      <td>{{ "%.0f"|format(p.new_subfield_probability * 100) }}%</td>
+      <td>{{ "%.0f"|format(p.proof_difficulty_estimate * 100) }}%</td>
+      <td>{{ "%.0f"|format(p.confidence * 100) }}%</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if result.open_problems %}
+<div class="card">
+  <h2>Related Open Problems</h2>
+  {% for op in result.open_problems %}
+  <div style="padding:8px 12px;border:1px solid var(--warn);border-radius:8px;margin-bottom:8px;font-size:13px">
+    <span style="color:var(--warn)">◆</span> <strong>{{ op }}</strong>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+
+<div class="card" style="margin-top:16px">
+  <h3>Try these example queries</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a href="{{ url_for('copilot') }}?q=elliptic+curves+number+theory" class="btn" style="background:var(--panel);color:var(--ink);border:1px solid var(--br)">Elliptic curves</a>
+    <a href="{{ url_for('copilot') }}?q=topology+manifolds+differential+geometry" class="btn" style="background:var(--panel);color:var(--ink);border:1px solid var(--br)">Topology & geometry</a>
+    <a href="{{ url_for('copilot') }}?q=category+theory+functors" class="btn" style="background:var(--panel);color:var(--ink);border:1px solid var(--br)">Category theory</a>
+    <a href="{{ url_for('copilot') }}?q=quantum+field+theory+physics" class="btn" style="background:var(--panel);color:var(--ink);border:1px solid var(--br)">Quantum physics</a>
+    <a href="{{ url_for('copilot') }}?q=prime+numbers+zeta+function+riemann" class="btn" style="background:var(--panel);color:var(--ink);border:1px solid var(--br)">Primes & Riemann</a>
+  </div>
+</div>
+{% endblock %}

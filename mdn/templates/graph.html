@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Mathematical Knowledge Graph</h1>
+<p class="sub">{{ graph_stats.node_count }} concepts, {{ graph_stats.edge_count }} relations across {{ graph_stats.domain_count }} domains</p>
+
+<form method="get" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:16px">
+  <div>
+    <label>Filter by Domain</label>
+    <select name="domain" onchange="this.form.submit()">
+      <option value="">All Domains</option>
+      {% for d in all_domains %}
+      <option value="{{ d }}" {% if d == selected_domain %}selected{% endif %}>{{ d }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if selected_domain %}
+  <a href="{{ url_for('graph') }}" class="btn" style="background:var(--panel);color:var(--ink);border:1px solid var(--br)">Clear Filter</a>
+  {% endif %}
+</form>
+
+<div class="grid3">
+  <div class="card">
+    <h3>Graph Statistics</h3>
+    <table>
+      <tr><td>Nodes</td><td><strong>{{ graph_stats.node_count }}</strong></td></tr>
+      <tr><td>Edges</td><td><strong>{{ graph_stats.edge_count }}</strong></td></tr>
+      <tr><td>Domains</td><td><strong>{{ graph_stats.domain_count }}</strong></td></tr>
+      <tr><td>Avg Degree</td><td><strong>{{ graph_stats.avg_degree }}</strong></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Highest Centrality (Most Connected)</h3>
+    {% for c in top_central %}
+    <div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between">
+        <span>{{ c.name }}</span>
+        <span class="badge b-ok">{{ c.score }}</span>
+      </div>
+      <div class="score-bar"><div class="score-fill" style="width:{{ (c.score * 500)|int }}%"></div></div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="card">
+    <h3>Bridge Concepts</h3>
+    <p style="font-size:12px;color:var(--muted)">Concepts connecting otherwise isolated clusters</p>
+    {% for b in bridges %}
+    <div class="chip" title="{{ b.domain }}">{{ b.name }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Concepts{% if selected_domain %} — {{ selected_domain }}{% endif %} ({{ concepts|length }})</h2>
+  <table>
+    <thead><tr>
+      <th>ID</th><th>Name</th><th>Domain</th><th>Type</th><th>Year</th>
+      <th>Status</th><th>Citations</th><th>Importance</th><th>Fruitfulness</th>
+    </tr></thead>
+    <tbody>
+    {% for c in concepts %}
+    <tr>
+      <td>{{ c.concept_id }}</td>
+      <td><strong>{{ c.name }}</strong></td>
+      <td><span class="chip">{{ c.domain }}</span></td>
+      <td>{{ c.concept_type }}</td>
+      <td>{{ c.year_introduced }}</td>
+      <td>
+        {% if c.proven %}<span class="badge b-ok">Proved</span>
+        {% else %}<span class="badge b-warn">Open</span>{% endif %}
+      </td>
+      <td>{{ "{:,}".format(c.citation_count) }}</td>
+      <td>
+        <div class="score-bar"><div class="score-fill" style="width:{{ (c.importance_score * 100)|int }}%"></div></div>
+        {{ "%.2f"|format(c.importance_score) }}
+      </td>
+      <td>
+        <div class="score-bar"><div class="score-fill" style="width:{{ (c.fruitfulness * 100)|int }}%"></div></div>
+        {{ "%.2f"|format(c.fruitfulness) }}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Domain Clusters</h2>
+  <div class="grid">
+  {% for domain, node_ids in clusters.items() %}
+    <div style="padding:10px;border:1px solid var(--br);border-radius:8px">
+      <strong style="font-size:13px">{{ domain }}</strong>
+      <div style="color:var(--muted);font-size:11px;margin-top:4px">{{ node_ids|length }} concepts</div>
+    </div>
+  {% endfor %}
+  </div>
+</div>
+{% endblock %}

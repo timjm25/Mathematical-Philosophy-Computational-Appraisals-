@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Latent Space Explorer</h1>
+<p class="sub">Curiosity Engine — finding unexplored regions, hidden bridges, and missing theories in mathematical space.</p>
+
+<form method="get" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:16px">
+  <div>
+    <label>Filter Insight Type</label>
+    <select name="type" onchange="this.form.submit()">
+      <option value="">All Types</option>
+      {% for t in all_types %}
+      <option value="{{ t }}" {% if t == selected_type %}selected{% endif %}>{{ t.replace('_',' ').title() }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label>Focus Concept (ID)</label>
+    <input type="text" name="focus" value="{{ focus_id }}" style="width:120px" placeholder="C001">
+  </div>
+  <button type="submit">Apply</button>
+  {% if selected_type %}
+  <a href="{{ url_for('explore') }}" class="btn" style="background:var(--panel);color:var(--ink);border:1px solid var(--br)">Clear</a>
+  {% endif %}
+</form>
+
+<div class="grid2">
+  <div>
+    <div class="card">
+      <h2>Curiosity Insights ({{ insights|length }})</h2>
+      {% for ins in insights %}
+      <div class="insight-card insight-{{ ins.insight_type }}">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <span class="badge b-info" style="margin-bottom:6px">{{ ins.insight_type.replace('_',' ').title() }}</span>
+          <span class="badge b-ok">{{ "%.2f"|format(ins.potential_score) }}</span>
+        </div>
+        <p style="margin:4px 0 6px;font-size:13px">{{ ins.description }}</p>
+        <p style="margin:0 0 4px;font-size:12px;color:var(--warn)"><em>❓ {{ ins.suggested_question }}</em></p>
+        <p style="margin:0;font-size:12px;color:var(--ok)">→ {{ ins.recommended_action }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>Nearest Neighbors for {{ focus_id }}</h2>
+      {% if nn_data %}
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Domain</th><th>Similarity</th></tr></thead>
+        <tbody>
+        {% for n in nn_data %}
+        <tr>
+          <td>{{ n.concept_id }}</td>
+          <td>{{ n.name }}</td>
+          <td><span class="chip">{{ n.domain }}</span></td>
+          <td>
+            <div class="score-bar"><div class="score-fill" style="width:{{ (n.similarity*100)|int }}%"></div></div>
+            {{ "%.3f"|format(n.similarity) }}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:var(--muted)">Enter a concept ID above to explore its nearest neighbors in embedding space.</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Latent Space Coordinates (2D Projection)</h2>
+      <canvas id="coordChart" height="260"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const coords = {{ coords|tojson }};
+new Chart(document.getElementById('coordChart'), {
+  type: 'scatter',
+  data: {
+    datasets: [{
+      label: 'Concepts',
+      data: coords.map(c => ({x: c.x, y: c.y, label: c.name})),
+      backgroundColor: 'rgba(56,189,248,0.7)',
+      pointRadius: 5,
+    }]
+  },
+  options: {
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ctx.raw.label
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+      y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+</script>
+{% endblock %}

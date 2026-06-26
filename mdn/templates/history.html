@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Historical Replay Simulator</h1>
+<p class="sub">Could MDN have predicted the most important mathematical discoveries before they happened?</p>
+
+<form method="get" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:16px">
+  <div>
+    <label>Historical Cutoff Year</label>
+    <select name="year" onchange="this.form.submit()">
+      {% for y in cutoff_years %}
+      <option value="{{ y }}" {% if y == cutoff %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit">Simulate</button>
+</form>
+
+<div class="grid" style="margin-bottom:16px">
+  <div class="card tile">
+    <div class="v">{{ accuracy.total }}</div>
+    <div class="l">Concepts after {{ cutoff }}</div>
+  </div>
+  <div class="card tile">
+    <div class="v">{{ "%.1f"|format(accuracy.avg_accuracy * 100) }}%</div>
+    <div class="l">Avg Prediction Accuracy</div>
+  </div>
+  <div class="card tile">
+    <div class="v">{{ accuracy.total_recommended }}</div>
+    <div class="l">Would Have Recommended</div>
+  </div>
+  <div class="card tile">
+    <div class="v" style="color:var(--ok)">{{ "%.0f"|format(accuracy.precision * 100) }}%</div>
+    <div class="l">Recommendation Precision</div>
+  </div>
+</div>
+
+{% if predictions %}
+<div class="card">
+  <h2>Simulated Predictions (cutoff {{ cutoff }})</h2>
+  <p class="sub">Showing what MDN would have predicted about concepts introduced after {{ cutoff }}.</p>
+  <table>
+    <thead><tr>
+      <th>Concept</th><th>Year Introduced</th><th>Predicted Importance</th><th>Actual Importance</th><th>Accuracy</th><th>Would Recommend</th><th>Explanation</th>
+    </tr></thead>
+    <tbody>
+    {% for p in predictions %}
+    <tr>
+      <td><strong>{{ p.name }}</strong></td>
+      <td>{{ p.year_introduced }}</td>
+      <td>
+        <div class="score-bar"><div class="score-fill" style="width:{{ (p.predicted_importance*100)|int }}%"></div></div>
+        {{ "%.2f"|format(p.predicted_importance) }}
+      </td>
+      <td>
+        <div class="score-bar"><div class="score-fill" style="width:{{ (p.actual_importance*100)|int }}%;background:var(--ok)"></div></div>
+        {{ "%.2f"|format(p.actual_importance) }}
+      </td>
+      <td>
+        <span class="badge {% if p.prediction_accuracy > 0.7 %}b-ok{% elif p.prediction_accuracy > 0.4 %}b-warn{% else %}b-bad{% endif %}">
+          {{ "%.0f"|format(p.prediction_accuracy * 100) }}%
+        </span>
+      </td>
+      <td>
+        {% if p.would_have_recommended %}<span class="badge b-ok">Yes</span>{% else %}<span class="badge b-bad">No</span>{% endif %}
+      </td>
+      <td style="font-size:11px;color:var(--muted)">{{ p.explanation }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Famous Historical Case Studies</h2>
+  <p class="sub">Analysis of whether MDN would have flagged these transformative developments.</p>
+  {% for f in famous %}
+  <div class="insight-card {% if f.would_have_predicted %}insight-bridge{% else %}insight-isolated{% endif %}">
+    <div style="display:flex;justify-content:space-between;align-items:start">
+      <strong style="font-size:14px">{{ f.name }}</strong>
+      <span class="badge {% if f.would_have_predicted %}b-ok{% else %}b-bad{% endif %}">
+        {% if f.would_have_predicted %}Would Have Predicted{% else %}Would Have Missed{% endif %}
+      </span>
+    </div>
+    <p style="margin:8px 0 4px;font-size:13px;color:var(--muted)">Cutoff: {{ f.cutoff }}</p>
+    <p style="margin:4px 0 8px;font-size:13px">{{ f.explanation }}</p>
+    <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:var(--acc)">Signals MDN would have detected:</p>
+    <ul style="margin:0;padding-left:18px;font-size:12px">
+      {% for s in f.signals %}
+      <li>{{ s }}</li>
+      {% endfor %}
+    </ul>
+    <p style="margin:8px 0 0;font-size:12px;color:var(--ok)"><strong>Actual impact:</strong> {{ f.actual_impact }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Mathematical Discovery Navigator</h1>
+<p class="sub">AI-powered mathematical intuition — identifying tomorrow's discoveries today</p>
+
+<div class="grid">
+  <div class="card tile">
+    <div class="v">{{ stats.total_concepts }}</div>
+    <div class="l">Mathematical Concepts</div>
+  </div>
+  <div class="card tile">
+    <div class="v">{{ stats.total_relations }}</div>
+    <div class="l">Knowledge Relations</div>
+  </div>
+  <div class="card tile">
+    <div class="v">{{ stats.domains_covered }}</div>
+    <div class="l">Mathematical Domains</div>
+  </div>
+  <div class="card tile">
+    <div class="v" style="color:var(--warn)">{{ stats.conjectures_ranked }}</div>
+    <div class="l">Open Conjectures Ranked</div>
+  </div>
+  <div class="card tile">
+    <div class="v" style="color:var(--ok)">{{ stats.total_insights }}</div>
+    <div class="l">Research Insights Found</div>
+  </div>
+  <div class="card tile">
+    <div class="v" style="color:var(--purple)">{{ stats.critical_insights }}</div>
+    <div class="l">High-Potential Insights</div>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Most Fruitful Research Directions</h2>
+    <canvas id="fruitChart" height="220"></canvas>
+  </div>
+  <div class="card">
+    <h2>Top Conjecture Rankings</h2>
+    <table>
+      <thead><tr><th>#</th><th>Conjecture</th><th>Domain</th><th>Complexity</th><th>Expected Downstream</th></tr></thead>
+      <tbody>
+      {% for s in scores %}
+      <tr>
+        <td><strong>{{ s.overall_rank }}</strong></td>
+        <td><a href="{{ url_for('conjecture') }}">{{ s.name }}</a></td>
+        <td><span class="chip">{{ s.domain }}</span></td>
+        <td><span class="badge {% if s.predicted_proof_complexity == 'exceptional' %}b-bad{% elif s.predicted_proof_complexity == 'deep' %}b-warn{% else %}b-ok{% endif %}">{{ s.predicted_proof_complexity }}</span></td>
+        <td>{{ s.expected_downstream }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Research Curiosity Insights</h2>
+  <p class="sub">MDN has identified these unexplored opportunities in mathematical space.</p>
+  {% for ins in insights %}
+  <div class="insight-card insight-{{ ins.insight_type }}">
+    <div style="display:flex;justify-content:space-between;align-items:start">
+      <div>
+        <span class="badge b-info">{{ ins.insight_type.replace('_',' ').title() }}</span>
+        <strong style="margin-left:8px;font-size:14px">{{ ins.description }}</strong>
+      </div>
+      <span class="badge b-ok">{{ "%.2f"|format(ins.potential_score) }}</span>
+    </div>
+    <p style="margin:8px 0 4px;font-size:13px;color:var(--muted)"><em>{{ ins.suggested_question }}</em></p>
+    <p style="margin:0;font-size:12px">→ {{ ins.recommended_action }}</p>
+  </div>
+  {% endfor %}
+  <a href="{{ url_for('explore') }}" class="btn" style="margin-top:8px">Explore All Insights →</a>
+</div>
+
+<div class="card">
+  <h2>Top Fruitfulness Predictions</h2>
+  <table>
+    <thead><tr>
+      <th>Concept</th><th>Domain</th><th>Fruitfulness</th><th>Theorem Yield</th>
+      <th>New Subfield %</th><th>Cross-Domain</th><th>Confidence</th>
+    </tr></thead>
+    <tbody>
+    {% for p in predictions %}
+    <tr>
+      <td><strong>{{ p.concept_id }}</strong></td>
+      <td><span class="chip">{{ p.domain }}</span></td>
+      <td>
+        <div>{{ "%.1f"|format(p.overall_fruitfulness * 100) }}%</div>
+        <div class="score-bar"><div class="score-fill" style="width:{{ "%.1f"|format(p.overall_fruitfulness * 100) }}%"></div></div>
+      </td>
+      <td>{{ p.expected_theorem_yield }}</td>
+      <td>{{ "%.0f"|format(p.new_subfield_probability * 100) }}%</td>
+      <td>{{ "%.0f"|format(p.cross_disciplinary_score * 100) }}%</td>
+      <td>{{ "%.0f"|format(p.confidence * 100) }}%</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<form method="post" action="{{ url_for('run_analysis') }}" style="margin-top:12px">
+  <button type="submit">Re-run Full Analysis</button>
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const labels = {{ chart_labels|tojson }};
+const data = {{ chart_data|tojson }};
+new Chart(document.getElementById('fruitChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Fruitfulness Score %',
+      data,
+      backgroundColor: 'rgba(56,189,248,0.6)',
+      borderColor: '#38bdf8',
+      borderWidth: 1
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' }, min: 0, max: 100 },
+      y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+</script>
+{% endblock %}

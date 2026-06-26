@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Mathematical Discovery Navigator</title>
+<style>
+:root{
+  --bg:#0f172a; --panel:#1e293b; --ink:#e2e8f0; --muted:#94a3b8;
+  --acc:#38bdf8; --warn:#f59e0b; --bad:#ef4444; --ok:#10b981; --br:#334155;
+  --purple:#a78bfa;
+}
+*{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
+body{margin:0;background:var(--bg);color:var(--ink);}
+nav{background:var(--panel);border-bottom:1px solid var(--br);padding:14px 24px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+nav .brand{font-weight:700;font-size:15px;color:var(--acc);margin-right:16px;white-space:nowrap}
+nav a{color:var(--ink);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px}
+nav a:hover{background:#334155}
+main{padding:24px;max-width:1400px;margin:0 auto}
+h1{margin:0 0 4px;font-size:22px}
+h2{margin:0 0 12px;font-size:17px}
+h3{margin:0 0 8px;font-size:14px;color:var(--muted)}
+.sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--br);border-radius:10px;padding:16px;margin-bottom:16px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.grid2{display:grid;gap:16px;grid-template-columns:1fr 1fr}
+.grid3{display:grid;gap:16px;grid-template-columns:1fr 1fr 1fr}
+.tile .v{font-size:28px;font-weight:700}
+.tile .l{font-size:11px;color:var(--muted);text-transform:uppercase;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--br)}
+th{color:var(--muted);font-size:11px;text-transform:uppercase;background:#0b1220}
+tr:hover td{background:rgba(56,189,248,.04)}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600}
+.b-ok{background:rgba(16,185,129,.15);color:var(--ok)}
+.b-warn{background:rgba(245,158,11,.15);color:var(--warn)}
+.b-bad{background:rgba(239,68,68,.15);color:var(--bad)}
+.b-info{background:rgba(56,189,248,.15);color:var(--acc)}
+.b-purple{background:rgba(167,139,250,.15);color:var(--purple)}
+form label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+form input,form select,form textarea{background:#0b1220;color:var(--ink);border:1px solid var(--br);border-radius:6px;padding:8px 10px;font-size:14px;margin-bottom:12px;width:100%}
+button,.btn{background:var(--acc);color:#001220;border:none;border-radius:6px;padding:8px 16px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-size:13px}
+button:hover,.btn:hover{opacity:0.85}
+.alert{padding:10px 14px;border-radius:8px;margin-bottom:10px;font-size:13px}
+.alert-warn{background:rgba(245,158,11,.12);border:1px solid var(--warn)}
+.alert-bad{background:rgba(239,68,68,.12);border:1px solid var(--bad)}
+.alert-ok{background:rgba(16,185,129,.12);border:1px solid var(--ok)}
+.insight-card{border:1px solid var(--br);border-radius:8px;padding:14px;margin-bottom:10px}
+.insight-hole{border-left:3px solid var(--bad)}
+.insight-bridge{border-left:3px solid var(--ok)}
+.insight-isolated{border-left:3px solid var(--warn)}
+.insight-underexplored{border-left:3px solid var(--purple)}
+.insight-missing_theory{border-left:3px solid var(--acc)}
+.score-bar{height:6px;border-radius:3px;background:var(--br);margin-top:4px}
+.score-fill{height:100%;border-radius:3px;background:var(--acc)}
+a{color:var(--acc);text-decoration:none}
+a:hover{text-decoration:underline}
+.chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;background:#1e293b;border:1px solid var(--br);margin:2px}
+details summary{cursor:pointer;color:var(--acc);font-size:13px}
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">Mathematical Discovery Navigator</span>
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <a href="{{ url_for('graph') }}">Knowledge Graph</a>
+  <a href="{{ url_for('conjecture') }}">Conjectures</a>
+  <a href="{{ url_for('explore') }}">Explore</a>
+  <a href="{{ url_for('history') }}">History</a>
+  <a href="{{ url_for('copilot') }}">Copilot</a>
+</nav>
+<main>{% block content %}{% endblock %}</main>
+</body>
+</html>

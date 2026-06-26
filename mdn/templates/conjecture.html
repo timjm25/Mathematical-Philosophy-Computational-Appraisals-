@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Open Conjecture Rankings</h1>
+<p class="sub">MDN scores every open conjecture by potential impact, novelty, connectivity, and proof complexity.</p>
+
+<form method="get" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:16px">
+  <div>
+    <label>Filter by Domain</label>
+    <select name="domain" onchange="this.form.submit()">
+      <option value="">All Domains</option>
+      {% for d in all_domains %}
+      <option value="{{ d }}" {% if d == selected_domain %}selected{% endif %}>{{ d }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if selected_domain %}
+  <a href="{{ url_for('conjecture') }}" class="btn" style="background:var(--panel);color:var(--ink);border:1px solid var(--br)">Clear Filter</a>
+  {% endif %}
+</form>
+
+{% for s in scores %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px">
+    <div>
+      <span style="font-size:18px;font-weight:700;color:var(--acc)">#{{ s.overall_rank }}</span>
+      <strong style="font-size:16px;margin-left:8px">{{ s.name }}</strong>
+      <span class="chip" style="margin-left:8px">{{ s.domain }}</span>
+    </div>
+    <span class="badge {% if s.predicted_proof_complexity == 'exceptional' %}b-bad{% elif s.predicted_proof_complexity == 'deep' %}b-warn{% elif s.predicted_proof_complexity == 'moderate' %}b-info{% else %}b-ok{% endif %}">
+      {{ s.predicted_proof_complexity }}
+    </span>
+  </div>
+
+  <div class="grid" style="margin-top:14px">
+    <div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Novelty</div>
+      <div class="score-bar" style="margin:4px 0"><div class="score-fill" style="width:{{ (s.novelty_score*100)|int }}%;background:var(--purple)"></div></div>
+      <strong>{{ "%.3f"|format(s.novelty_score) }}</strong>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Importance</div>
+      <div class="score-bar" style="margin:4px 0"><div class="score-fill" style="width:{{ (s.importance_score*100)|int }}%"></div></div>
+      <strong>{{ "%.3f"|format(s.importance_score) }}</strong>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Connectivity</div>
+      <div class="score-bar" style="margin:4px 0"><div class="score-fill" style="width:{{ (s.connectivity_score*100)|int }}%;background:var(--ok)"></div></div>
+      <strong>{{ "%.3f"|format(s.connectivity_score) }}</strong>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Generalization</div>
+      <div class="score-bar" style="margin:4px 0"><div class="score-fill" style="width:{{ (s.generalization_score*100)|int }}%;background:var(--warn)"></div></div>
+      <strong>{{ "%.3f"|format(s.generalization_score) }}</strong>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Depth</div>
+      <div class="score-bar" style="margin:4px 0"><div class="score-fill" style="width:{{ (s.depth_estimate*100)|int }}%;background:var(--bad)"></div></div>
+      <strong>{{ "%.3f"|format(s.depth_estimate) }}</strong>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase">Expected Downstream</div>
+      <strong style="font-size:20px">{{ s.expected_downstream }}</strong>
+    </div>
+  </div>
+
+  {% if s.historical_analogues %}
+  <p style="margin:12px 0 4px;font-size:12px;color:var(--muted)">Historical analogues:</p>
+  {% for a in s.historical_analogues %}<span class="chip">{{ a }}</span>{% endfor %}
+  {% endif %}
+
+  {% if s.related_conjectures %}
+  <p style="margin:10px 0 4px;font-size:12px;color:var(--muted)">Related open problems:</p>
+  {% for r in s.related_conjectures %}<span class="chip" style="border-color:var(--warn);color:var(--warn)">{{ r }}</span>{% endfor %}
+  {% endif %}
+
+  {% if s.research_roadmap %}
+  <details style="margin-top:12px">
+    <summary>Research Roadmap ({{ s.research_roadmap|length }} steps)</summary>
+    <ol style="margin:10px 0;padding-left:20px;font-size:13px">
+      {% for step in s.research_roadmap %}
+      <li style="margin-bottom:6px">{{ step }}</li>
+      {% endfor %}
+    </ol>
+  </details>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><p style="color:var(--muted)">No open conjectures found{% if selected_domain %} for {{ selected_domain }}{% endif %}.</p></div>
+{% endfor %}
+{% endblock %}
