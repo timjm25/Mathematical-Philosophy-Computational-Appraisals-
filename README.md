@@ -7,7 +7,7 @@
 [![Flask](https://img.shields.io/badge/Flask-3.0-green)](https://flask.palletsprojects.com)
 [![NetworkX](https://img.shields.io/badge/NetworkX-3.1-orange)](https://networkx.org)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.3-red)](https://scikit-learn.org)
-[![Tests](https://img.shields.io/badge/Tests-124%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/Tests-163%20passing-brightgreen)]()
 
 ---
 
@@ -91,9 +91,9 @@ Combinatorics
 ├─────────────────────────────────────────────────────────────────────────┤
 │  DATA LAYER                                                              │
 │  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────────────┐ │
-│  │ Mock Corpus  │  │   Ontology   │  │  Real Connectors (extensible)  │ │
-│  │ 80 concepts  │  │  16 domains  │  │  arXiv / Semantic Scholar / ..  │ │
-│  │ 120 relations│  │  15 types    │  │                                │ │
+│  │ File import  │  │   Ontology   │  │  arXiv connector (extensible)  │ │
+│  │ CSV/XLSX/JSON│  │  16 domains  │  │  + optional demo corpus        │ │
+│  │ + validation │  │  15 types    │  │    (80 concepts, 120 rels)     │ │
 │  └──────┬───────┘  └──────┬───────┘  └────────────────┬───────────────┘ │
 │         └─────────────────┴──────────────────────────┘                  │
 │                           │                                              │
@@ -252,16 +252,99 @@ git clone https://github.com/timjm25/Mathematical-Philosophy-Computational-Appra
 cd Mathematical-Philosophy-Computational-Appraisals-
 
 # Install dependencies
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 
-# Run the server
-python run.py
+# Run the server (serves ./mdn.db)
+python3 run.py                 # loads the 80-concept demo corpus if the database is empty
+python3 run.py --no-demo       # or start empty and import your own data
+python3 run.py --db my_corpus.db --port 8080
 
 # Open your browser
 open http://localhost:5075
+
+# Run the tests
+python3 -m pytest -q
 ```
 
-The application auto-seeds on first request — no setup required.
+The demo corpus is optional: it loads automatically into an empty database
+unless you pass `--no-demo` or set `MDN_SEED_DEMO=0`, and you can load it
+later from the **Import Data** page or with `python3 -m mdn.cli demo`.
+
+---
+
+## Import Your Own Data
+
+Templates with five clearly marked `SAMPLE` rows are in `data/templates/`
+(also downloadable from the **Import Data** page):
+
+- `data/templates/concepts_template.csv` — one row per concept
+- `data/templates/relations_template.csv` — one row per directed relation
+
+Copy them, replace the sample rows with your own, then either upload them at
+`http://localhost:5075/import` or use the CLI:
+
+```bash
+python3 -m mdn.cli import --concepts my_concepts.csv --relations my_relations.csv --replace
+python3 -m mdn.cli import --concepts my_corpus.xlsx      # one workbook, sheets "concepts" + "relations"
+python3 -m mdn.cli import --concepts bundle.json --dry-run   # validate only
+python3 -m mdn.cli export --out-dir exported/            # current data back out as CSV
+python3 -m mdn.cli stats | analyze | demo | clear --yes
+```
+
+All commands take `--db PATH` (default `$MDN_DB` or `mdn.db`, the file
+`run.py` serves). Accepted files: `.csv`, `.tsv`, `.xlsx`, `.json`
+(`{"concepts": [...], "relations": [...]}` or a bare list of rows).
+
+| Concept column | Required | Format |
+|----------------|----------|--------|
+| `concept_id` | yes | unique text id |
+| `name` | yes | text |
+| `domain` | yes | e.g. `Number Theory` (values in `data/ontology.py`; others accepted with a warning) |
+| `concept_type` | yes | `theorem`, `conjecture`, `axiom`, … (only `conjecture` rows are ranked as conjectures) |
+| `year_introduced` | yes | whole number (negative = BCE) |
+| `abstract` | no | text; drives the embeddings and the copilot |
+| `authors` | no | names separated by `;` |
+| `citation_count`, `downstream_theorems` | no | whole numbers ≥ 0 (default 0) |
+| `importance_score` | no | 0–1 (default 0.5) |
+| `proven` | no | `true`/`false`, `yes`/`no`, `1`/`0` (default false) |
+| `cross_domain_influence` | no | domains separated by `;` |
+
+| Relation column | Required | Format |
+|-----------------|----------|--------|
+| `source_id`, `target_id` | yes | `concept_id`s from the same import or already in the database |
+| `relation_type` | yes | `depends_on`, `generalizes`, `uses`, `motivated_by`, … (see `data/ontology.py`; others accepted with a warning) |
+
+Headers match case-insensitively and extra columns are ignored. Every row is
+validated before anything is written: wrong numbers, empty required fields,
+duplicate ids, relations to unknown concepts and self-loops are listed by row
+number, and **nothing is imported** until they are fixed (or you tick
+"import the valid rows" / pass `--skip-invalid`). By default an import is
+merged into the existing data (same `concept_id` overwrites); "Replace all
+existing data" / `--replace` starts clean, which you will want the first time
+if the demo corpus was loaded. The analysis re-runs after every import.
+
+### Live arXiv search
+
+```bash
+python3 -m mdn.cli arxiv "persistent homology" --max 25 --save-csv arxiv_concepts.csv
+python3 -m mdn.cli arxiv "cat:math.AG AND all:schemes" --type theorem --dry-run
+```
+
+`data/connectors.py` calls arXiv's public API (no account or key), maps each
+paper's arXiv category to an ontology domain (`math.AG` → Algebraic
+Geometry, `math.NT` → Number Theory, …) and sends the rows through the same
+validation as a file import. Optional settings: `MDN_ARXIV_URL`,
+`MDN_HTTP_TIMEOUT`, `MDN_CONTACT_EMAIL` (added to the User-Agent). arXiv has
+no citation data, so papers arrive with `citation_count` 0, `importance_score`
+0.5 and no relations — edit the saved CSV and add a relations file for
+better scores. Network failures print a one-line error and change nothing.
+
+### Still out of scope
+
+- Citation-graph connectors (Semantic Scholar, OpenAlex, MathSciNet, Mathlib)
+  that would create relations automatically.
+- The copilot and embeddings are TF-IDF based; no LLM or math language model is called.
+- The web app has no user accounts; run it locally (it binds to 127.0.0.1).
 
 ---
 
@@ -275,6 +358,9 @@ The application auto-seeds on first request — no setup required.
 | `/explore` | Latent space explorer — curiosity insights and embedding visualization |
 | `/history` | Historical replay simulator |
 | `/copilot` | Research copilot — natural language query interface |
+| `/import` | Upload CSV/XLSX/JSON, download templates, export CSV, load the demo corpus |
+
+With an empty database the analysis pages redirect to `/import`.
 
 ---
 
@@ -369,6 +455,26 @@ Response:
 curl -X POST http://localhost:5075/api/v1/run_analysis
 ```
 
+### Import Data
+
+```bash
+# Upload files (same fields as the /import page); replace / skip_invalid are optional
+curl -X POST http://localhost:5075/api/v1/import \
+  -F concepts_file=@data/templates/concepts_template.csv \
+  -F relations_file=@data/templates/relations_template.csv -F replace=1
+
+# Or send rows as JSON
+curl -X POST http://localhost:5075/api/v1/import -H "Content-Type: application/json" \
+  -d '{"concepts": [{"concept_id": "N1", "name": "New result", "domain": "Topology",
+                     "concept_type": "theorem", "year_introduced": 2024}]}'
+
+# Load the demo corpus
+curl -X POST http://localhost:5075/api/v1/demo -H "Content-Type: application/json" -d '{"replace": true}'
+```
+
+Returns `200` with counts, or `400` with `errors` (one line per bad row) and nothing written.
+CSV exports: `GET /export/concepts.csv`, `GET /export/relations.csv`.
+
 ---
 
 ## Knowledge Graph Schema
@@ -429,43 +535,30 @@ DOMAINS = [
 
 ### Adding Real Data Connectors
 
-Create a new file in `data/` following this pattern:
+`data/connectors.py` holds a working `ArxivConnector`. A new connector only
+has to return concept dicts in the import schema; pass them through the
+importer so they are validated like a file:
 
 ```python
-class ArxivConnector:
-    BASE_URL = "https://export.arxiv.org/api/query"
-    
-    def fetch_concepts(self, query: str, max_results: int = 100) -> list[dict]:
-        """Fetch recent papers and convert to concept format."""
-        ...
-    
-    def fetch_relations(self, concept_ids: list[str]) -> list[dict]:
-        """Infer relations from citation graph."""
-        ...
-```
-
-Then seed the model:
-
-```python
-from data.arxiv_connector import ArxivConnector
+from data.connectors import ArxivConnector
+from data.importer import parse_concepts
 from mdn.model import Model
 
-m = Model("mdn.db")
-connector = ArxivConnector()
-for concept in connector.fetch_concepts("algebraic geometry", max_results=500):
-    m.add_concept(concept)
-m.run_full_analysis()
+res = parse_concepts(ArxivConnector().fetch_concepts("algebraic geometry", max_results=100))
+if res.ok:
+    Model("mdn.db").import_data(res.concepts, res.relations)
 ```
 
-### Supported Real-World Data Sources
+### Real-World Data Sources
 
-| Source | URL | What to extract |
-|--------|-----|-----------------|
-| arXiv | `export.arxiv.org/api/query` | Recent papers, authors, abstracts |
-| Semantic Scholar | `api.semanticscholar.org/graph/v1` | Citations, fields of study |
-| OpenAlex | `api.openalex.org/works` | Concept hierarchy, institutions |
-| MathSciNet | Via subscription | Formal classifications, reviews |
-| Lean Mathlib | GitHub API | Formal theorems, dependencies |
+| Source | Status | What to extract |
+|--------|--------|-----------------|
+| arXiv | **built in** (`python3 -m mdn.cli arxiv ...`) | Recent papers, authors, abstracts, categories |
+| CSV / Excel / JSON files | **built in** (`/import`, `python3 -m mdn.cli import`) | Anything you curate |
+| Semantic Scholar | not yet | Citations, fields of study |
+| OpenAlex | not yet | Concept hierarchy, citation graph |
+| MathSciNet | not yet (subscription) | Formal classifications, reviews |
+| Lean Mathlib | not yet | Formal theorems, dependencies |
 
 ---
 
@@ -479,7 +572,10 @@ MathDiscoveryNavigator/
 │
 ├── data/
 │   ├── ontology.py                 # Domain / concept / relation type definitions
-│   └── mock_corpus.py              # 80 concepts, 120 relations (random.seed=42)
+│   ├── mock_corpus.py              # Optional demo corpus: 80 concepts, 120 relations
+│   ├── importer.py                 # CSV/TSV/XLSX/JSON import + validation, CSV export
+│   ├── connectors.py               # Live arXiv connector
+│   └── templates/                  # concepts_template.csv, relations_template.csv
 │
 ├── engine/
 │   ├── knowledge_graph.py          # NetworkX DiGraph with analytics
@@ -492,8 +588,9 @@ MathDiscoveryNavigator/
 │
 ├── mdn/
 │   ├── model.py                    # SQLite persistence (5 tables)
-│   ├── seed.py                     # Database seeding
-│   ├── app.py                      # Flask factory (6 routes + 10 REST endpoints)
+│   ├── seed.py                     # Demo-corpus seeding
+│   ├── cli.py                      # python3 -m mdn.cli import | demo | arxiv | export | ...
+│   ├── app.py                      # Flask factory (browser routes + REST endpoints)
 │   └── templates/                  # Dark-theme HTML templates with Chart.js
 │       ├── base.html
 │       ├── dashboard.html
@@ -501,16 +598,19 @@ MathDiscoveryNavigator/
 │       ├── conjecture.html
 │       ├── explore.html
 │       ├── history.html
-│       └── copilot.html
+│       ├── copilot.html
+│       └── import.html
 │
-└── tests/                          # 124 tests, 0 failures
+└── tests/                          # 163 tests, 0 failures
     ├── test_knowledge_graph.py
     ├── test_embedding_engine.py
     ├── test_fruitfulness_predictor.py
     ├── test_conjecture_ranker.py
     ├── test_curiosity_engine.py
     ├── test_historical_simulator.py
-    └── test_model.py
+    ├── test_model.py
+    ├── test_importer.py
+    └── test_import_app_cli.py
 ```
 
 ---
@@ -580,7 +680,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 Contributions welcome. Areas of highest priority:
 
-1. **Real data connectors** — arXiv, Semantic Scholar, OpenAlex, Lean Mathlib
+1. **More data connectors** — Semantic Scholar, OpenAlex (citation graph → relations), Lean Mathlib (arXiv and file import are built in)
 2. **Better embeddings** — replace TF-IDF with mathematical language models (Llemma, MathBERT)
 3. **Richer ontology** — formalize concept types to align with standard mathematical ontologies
 4. **Validation studies** — systematic back-testing against historical mathematical development

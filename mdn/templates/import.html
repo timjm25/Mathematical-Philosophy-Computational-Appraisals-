@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Import Your Data</h1>
+<p class="sub">Load your own concepts and relations from CSV, TSV, Excel (.xlsx) or JSON. Every row is validated before anything is written; the full analysis re-runs after a successful import.</p>
+
+{% if empty %}
+<div class="alert alert-warn">The database is empty. Import a file below, or load the demo corpus to explore the app.</div>
+{% endif %}
+
+{% if outcome %}
+  {% if outcome.imported %}
+  <div class="alert alert-ok">{{ outcome.message }} <a href="{{ url_for('dashboard') }}">Open the dashboard →</a></div>
+  {% else %}
+  <div class="alert alert-bad">{{ outcome.message or "Import failed." }}</div>
+  {% endif %}
+  {% if outcome.errors %}
+  <div class="card">
+    <h2>Problems ({{ outcome.errors|length }})</h2>
+    <ul style="font-size:13px;margin:0;padding-left:18px">
+      {% for e in outcome.errors[:100] %}<li>{{ e }}</li>{% endfor %}
+      {% if outcome.errors|length > 100 %}<li>… and {{ outcome.errors|length - 100 }} more</li>{% endif %}
+    </ul>
+  </div>
+  {% endif %}
+  {% if outcome.warnings %}
+  <details class="card"><summary>Warnings ({{ outcome.warnings|length }})</summary>
+    <ul style="font-size:13px;margin:8px 0 0;padding-left:18px">
+      {% for w in outcome.warnings[:100] %}<li>{{ w }}</li>{% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+{% endif %}
+
+<div class="grid2">
+  <div class="card">
+    <h2>Upload files</h2>
+    <form method="post" action="{{ url_for('import_page') }}" enctype="multipart/form-data">
+      <label>Concepts file (.csv, .tsv, .xlsx, .json) — or one .xlsx/.json holding both tables</label>
+      <input type="file" name="concepts_file" accept=".csv,.tsv,.xlsx,.json">
+      <label>Relations file (optional)</label>
+      <input type="file" name="relations_file" accept=".csv,.tsv,.xlsx,.json">
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="replace" value="1" style="width:auto;margin:0"> Replace all existing data (including the demo corpus)</label>
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="skip_invalid" value="1" style="width:auto;margin:0"> Import the valid rows even if some rows fail</label>
+      <button type="submit">Validate and import</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Templates</h2>
+    <p class="sub">Download a template, replace the SAMPLE rows with your own, and upload it.</p>
+    {% for f in template_files %}
+    <p><a class="btn" href="{{ url_for('download_template', name=f) }}">{{ f }}</a></p>
+    {% endfor %}
+    <h3 style="margin-top:16px">Current database</h3>
+    <p style="font-size:13px">{{ stats.total_concepts }} concepts · {{ stats.total_relations }} relations · {{ stats.domains_covered }} domains</p>
+    <p><a href="{{ url_for('export_csv', kind='concepts') }}">Export concepts.csv</a> · <a href="{{ url_for('export_csv', kind='relations') }}">Export relations.csv</a></p>
+    <form method="post" action="{{ url_for('import_demo') }}" style="margin-top:12px">
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="replace" value="1" style="width:auto;margin:0"> Replace existing data</label>
+      <button type="submit">Load demo corpus (80 concepts)</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Column schema</h2>
+  <table>
+    <thead><tr><th>Concepts column</th><th>Required</th><th>Format</th></tr></thead>
+    <tbody>
+      <tr><td>concept_id</td><td>yes</td><td>unique text id</td></tr>
+      <tr><td>name</td><td>yes</td><td>text</td></tr>
+      <tr><td>domain</td><td>yes</td><td>e.g. Number Theory, Topology (other values accepted with a warning)</td></tr>
+      <tr><td>concept_type</td><td>yes</td><td>theorem, conjecture, axiom, group, … (only "conjecture" rows are ranked as conjectures)</td></tr>
+      <tr><td>year_introduced</td><td>yes</td><td>whole number</td></tr>
+      <tr><td>abstract</td><td>no</td><td>text — drives embeddings and the copilot</td></tr>
+      <tr><td>authors</td><td>no</td><td>names separated by ;</td></tr>
+      <tr><td>citation_count, downstream_theorems</td><td>no</td><td>whole numbers ≥ 0 (default 0)</td></tr>
+      <tr><td>importance_score</td><td>no</td><td>0 to 1 (default 0.5)</td></tr>
+      <tr><td>proven</td><td>no</td><td>true / false (default false)</td></tr>
+      <tr><td>cross_domain_influence</td><td>no</td><td>domains separated by ;</td></tr>
+    </tbody>
+  </table>
+  <table style="margin-top:12px">
+    <thead><tr><th>Relations column</th><th>Required</th><th>Format</th></tr></thead>
+    <tbody>
+      <tr><td>source_id, target_id</td><td>yes</td><td>concept_id values from this import or already in the database</td></tr>
+      <tr><td>relation_type</td><td>yes</td><td>depends_on, generalizes, special_case_of, dual_of, uses, contradicts, motivated_by, equivalent_to, extends, historically_preceded, shares_proof_techniques, appears_in_applications (other values accepted with a warning)</td></tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

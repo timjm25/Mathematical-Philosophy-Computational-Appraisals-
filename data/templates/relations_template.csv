@@ -1,0 +1,5 @@
+source_id,target_id,relation_type
+SAMPLE-002,SAMPLE-001,generalizes
+SAMPLE-003,SAMPLE-002,extends
+SAMPLE-005,SAMPLE-004,motivated_by
+SAMPLE-003,SAMPLE-001,uses
