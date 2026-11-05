@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Test fixture in the arXiv API Atom format; the entries are invented examples. -->
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <title>ArXiv Query: example</title>
+  <entry>
+    <id>http://arxiv.org/abs/2401.00001v2</id>
+    <published>2024-01-02T10:00:00Z</published>
+    <title>Example Stability Results for
+      Persistence Diagrams</title>
+    <summary>  We prove an example stability bound for persistence diagrams
+      under perturbations of the filtration.  </summary>
+    <author><name>Example Author One</name></author>
+    <author><name>Example Author Two</name></author>
+    <arxiv:primary_category term="math.AT" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.AT" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.CO" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CG" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2312.09999v1</id>
+    <published>2023-12-30T09:00:00Z</published>
+    <title>An Example Note on Prime Gaps</title>
+    <summary>An invented abstract about gaps between consecutive primes.</summary>
+    <author><name>Example Author Three</name></author>
+    <arxiv:primary_category term="math.NT" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.NT" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+</feed>

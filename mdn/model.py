@@ -310,6 +310,42 @@ class Model:
         return result
 
     # ------------------------------------------------------------------
+    # Bulk load / reset
+    # ------------------------------------------------------------------
+
+    def clear_all(self) -> None:
+        """Delete every concept, relation and derived analysis row."""
+        with self._conn() as conn:
+            for table in ("concepts", "relations", "fruitfulness_predictions",
+                          "conjecture_scores", "curiosity_insights"):
+                conn.execute(f"DELETE FROM {table}")
+
+    def clear_analysis(self) -> None:
+        """Drop derived rows so a re-run never leaves stale predictions behind."""
+        with self._conn() as conn:
+            for table in ("fruitfulness_predictions", "conjecture_scores", "curiosity_insights"):
+                conn.execute(f"DELETE FROM {table}")
+
+    def import_data(self, concepts: list[dict], relations: list[dict],
+                    replace: bool = False, analyze: bool = True) -> dict:
+        """
+        Store validated concepts/relations (see data/importer.py) and, by
+        default, re-run the full analysis. replace=True wipes existing data
+        first; otherwise rows are merged (same concept_id is overwritten).
+        """
+        if replace:
+            self.clear_all()
+        for c in concepts:
+            self.add_concept(c)
+        for r in relations:
+            self.add_relation(r)
+        out = {"concepts_imported": len(concepts), "relations_imported": len(relations)}
+        if analyze:
+            self.clear_analysis()
+            out["analysis"] = self.run_full_analysis()
+        return out
+
+    # ------------------------------------------------------------------
     # Analysis orchestration
     # ------------------------------------------------------------------
 

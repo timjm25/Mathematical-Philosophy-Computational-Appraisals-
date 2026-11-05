@@ -1,0 +1,6 @@
+concept_id,name,domain,concept_type,year_introduced,abstract,authors,citation_count,importance_score,proven,downstream_theorems,cross_domain_influence
+SAMPLE-001,Euler Characteristic,Topology,theorem,1758,"SAMPLE ROW - replace with your own. V - E + F = 2 for convex polyhedra; generalises to an invariant of topological spaces computed from homology.",Leonhard Euler,4200,0.85,true,40,Combinatorics; Algebraic Geometry
+SAMPLE-002,Homology Groups,Topology,homology class,1895,"SAMPLE ROW - algebraic invariants that count holes of each dimension in a topological space.",Henri Poincaré,6100,0.9,true,60,Algebra; Category Theory
+SAMPLE-003,Persistent Homology,Topology,theorem,2002,"SAMPLE ROW - tracks how homology changes across a filtration of spaces; the basis of topological data analysis.",Herbert Edelsbrunner; Afra Zomorodian,3500,0.7,true,25,Probability; Optimization
+SAMPLE-004,Twin Prime Conjecture,Number Theory,conjecture,1849,"SAMPLE ROW - there are infinitely many primes p such that p + 2 is also prime.",Alphonse de Polignac,1800,0.8,false,0,Combinatorics
+SAMPLE-005,Bounded Gaps Between Primes,Number Theory,theorem,2013,"SAMPLE ROW - there are infinitely many pairs of primes that differ by at most a fixed bound.",Yitang Zhang; James Maynard,1500,0.75,true,12,Combinatorics
